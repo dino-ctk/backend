@@ -1,49 +1,66 @@
-from flask import Flask, request
+from flask import Flask, request, jsonify
+from db import stores, items
+import uuid
+from flask_smorest import abort
 
 app = Flask(__name__)
 
-stores = [
-    {
-        "name": "Brodokomerc",
-        "items": [
-            {
-                "name": "laksativ",
-                "price": 10
-            }
-        ]
-    }
-]
+
+### STORES
 
 @app.get("/stores")
 def get_stores():
-    return {"stores":stores}
+    return jsonify({"stores": list(stores.values())})
 
 @app.post("/stores")
 def create_store():
-    request_data = request.get_json()
+    stores_data = request.get_json()
+    store_id = uuid.uuid4().hex
     new_store = {
-        "name": request_data["name"],
+        "id": store_id,
+        "name": stores_data["name"],
         "items":[]
     }
-    stores.append(new_store)
-    return new_store, 201
+    stores[store_id] = new_store
+    return jsonify(new_store), 201
 
-@app.get("/stores/<string:store_name>")
-def get_store(store_name):
-    for store in stores:
-        if store["name"] == store_name:
-            return store
-    return {"message": "Store not found"}, 401 
+@app.get("/stores/<string:store_id>")
+def get_store(store_id):
+    try:
+        return jsonify(stores[store_id])
+    except KeyError:
+        abort(404, message="Store not found")
+    
 
-@app.post("/stores/<string:store_name>/item")
-def create_item_in_store(store_name):
-    request_data = request.get_json()
-    for store in stores:
-        if store["name"] == store_name:
-            new_item = {
-                "name": request_data["name"],
-                "price": request_data["price"]
-            }
-            store["items"].append(new_item)
-            return new_item, 201
-    return {"message": "Store not found"}, 401    
+#### ITEMS    
+@app.get("/items")
+def get_all_items():
+    return jsonify({"items":list(items.values())})
+
+@app.get("/items/<string:item_id>")
+def get_item(item_id):
+    try:
+        return jsonify(items[item_id])
+    except KeyError:
+        abort(404, message="Item not foundd")
+    
+
+        
+@app.post("/items")
+def create_item():
+    item_data = request.get_json()
+    store_id = item_data.get("store_id")
+    if store_id not in stores:
+        abort(404, message="Store not found")
+    
+    
+    item_id = uuid.uuid4().hex
+    new_Item = {
+        "id": item_id,
+        "name": item_data.get("name"),
+        "price": item_data.get("price"),
+        "store_id": store_id
+    }
+
+    items[item_id] = new_Item
+    return jsonify(new_Item), 201
