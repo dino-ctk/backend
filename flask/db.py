@@ -1,5 +1,5 @@
 stores = {
-    1:{
+    "1":{
         "name":"Plodine",
         "items": [
             {
@@ -8,7 +8,7 @@ stores = {
             }
         ]
     },
-    2:{
+    "2":{
         "name":"Brodokomerc",
         "items": [
             {
@@ -19,11 +19,11 @@ stores = {
     }
 }
 items = {
-    1: {
+    "1": {
         "name":"laksativ",
         "price": 20
     },
-    2: {
+    "2": {
         "name":"drugi",
         "price": 30
     }
