@@ -3,26 +3,31 @@ from flask.views import MethodView
 from db import stores
 import uuid
 from flask_smorest import abort, Blueprint
+from schemas import StoreScheme
 
 blp = Blueprint("stores", __name__, description="Operations on stores")
 
 @blp.route("/stores")
 class StoreList(MethodView):
+    @blp.response(200, StoreScheme(many=True))
     def get(self):
-        return {"stores":list(stores.values())}
+        return stores.values()
     
-    def post(self):
-        stores_data = request.get_json()
+    @blp.arguments(StoreScheme)
+    @blp.response(201, StoreScheme)
+    # Flask-Smorest injects the parsed and validated data as an argument to your method.
+    def post(self, store_data):
         store_id = uuid.uuid4().hex
         new_store = {
             "id": store_id,
-            **stores_data
+            **store_data
         }
         stores[store_id] = new_store
-        return jsonify(new_store), 201
+        return new_store
 
 @blp.route("/stores/<string:store_id>")
 class Store(MethodView):
+    @blp.response(200, StoreScheme)
     def get(self, store_id):
         try:
             return jsonify(stores[store_id])

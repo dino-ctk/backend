@@ -3,17 +3,20 @@ from flask.views import MethodView
 from db import items, stores
 import uuid
 from flask_smorest import abort, Blueprint
+from schemas import ItemScheme, ItemUpdateScheme
 
 
 blp = Blueprint("items", "items", description="Operations on items")
 
 @blp.route("/items")
 class ItemList(MethodView):
+    @blp.response(200, ItemScheme(many=True))
     def get(self):
         return jsonify({"items":list(items.values())})
     
-    def post(self):
-        item_data = request.get_json()
+    @blp.arguments(ItemScheme)
+    @blp.response(201, ItemScheme)
+    def post(self, item_data):
         store_id = item_data.get("store_id")
         if store_id not in stores:
             abort(404, message="Store not found")
@@ -25,36 +28,32 @@ class ItemList(MethodView):
         }
 
         items[item_id] = new_Item
-        return jsonify(new_Item), 201
+        return new_Item
 
 
 @blp.route("/items/<string:item_id>")
 class Item(MethodView):
+    @blp.response(200, ItemScheme)
     def get(self, item_id):
         try:
             return jsonify(items[item_id])
         except KeyError:
             abort(404, message="Item not foundd")
 
+    @blp.arguments(ItemUpdateScheme)
+    @blp.response(201, ItemScheme)
     def put(self, item_id):
         item_data = request.get_json()
-
-        if "price" not in item_data or "name" not in item_data:
-            abort(
-                400,
-                message = "Bad request. price and name are required"
-            )
-
         try:
             item = items[item_id]
             item |= item_data
-            return jsonify(item)
+            return item
         except KeyError:
             abort(404, message="Item not foundd")            
 
     def delete(self, item_id):
         try:
             del items[item_id]
-            return jsonify({"message":"item deleted"})
+            return {"message":"item deleted"}
         except KeyError:
             abort(404, message="Item not foundd")
