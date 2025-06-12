@@ -39,4 +39,4 @@ class Store(MethodView):
         store = StoreModel.query.get_or_404(store_id)
         db.session.delete(store)
         db.session.commit()
-        return {"message":"Item deleted"}
+        return {"message":"Store deleted"}
