@@ -5,8 +5,9 @@ from sqlalchemy.exc import SQLAlchemyError
 import uuid
 from flask_smorest import abort, Blueprint
 from schemas import StoreScheme
+from flask_jwt_extended import jwt_required
 
-from models import StoreModel
+from models import StoreModel, TagModel
 
 blp = Blueprint("stores", __name__, description="Operations on stores")
 
@@ -40,3 +41,23 @@ class Store(MethodView):
         db.session.delete(store)
         db.session.commit()
         return {"message":"Store deleted"}
+    
+    @blp.arguments(StoreScheme)
+    @blp.response(201, StoreScheme)
+    def put(self, store_data, store_id):
+        store = StoreModel.query.get_or_404(store_id)
+        store.name = store_data.get("name", store.name)
+
+        if "tags" in store_data:
+            # Remove existing tags
+            for tag in store.tags.all():
+                db.session.delete(tag)
+            # Create new TagModel from store_data
+            for tag in store_data["tags"]:
+                new_tag = TagModel(name=tag.get("name"), store_id=store.id)
+                store.tags.append(new_tag)
+            try:
+                db.session.commit() 
+            except SQLAlchemyError:
+                    abort(500, message="An error occured while inserting the store") 
+            return store           
